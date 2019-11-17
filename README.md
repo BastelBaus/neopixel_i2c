@@ -15,7 +15,18 @@ The maximum number depends on
 
 ## Circuit
 
-Suggested circuit.
+
+### Defaultr Pin assignment on a digisparc ATTiny85.
+
+PB6: not used
+PB5: GPIO2
+PB4: GPIO1
+PB3: NeoPixelData
+PB2: I2C - SCL
+PB1: GPIO0
+PB0: I2C - SDA
+
+### Suggested circuit from the scratch.
 
 ```
                             ^ VCC
@@ -182,7 +193,7 @@ after sending the command to the LEDS
 1: WAIT mode turned on. All LEDs are only updated if a SHOW command is sent.
 
 
-### **A9**, **A8** 
+#### **A9**, **A8** 
 High bits of the register map.
 
 Note: with a Burst command you can also write the complete address 
