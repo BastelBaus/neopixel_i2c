@@ -9,9 +9,9 @@ class which can be included on the master.
 ## How many LEDs?
 
 The maximum number depends on 
-  * the amount of RAM available on your AVR (Attiny45 ~82 LEDs, and an Attiny85 ~167 for RGB)
+  * the amount of RAM available on your AVR (Attiny45 ~82 LEDs, and an Attiny85 ~167 each for RGB)
   * the type of LED (RGB or RGBW) and
-  * the supported address space (current implementation 339 LEDs with 1024 addresses)
+  * the supported address space (current implementation 338 LEDs with 1024 addresses)
 
 ## Circuit
 
@@ -62,7 +62,9 @@ git submodule update --init --recursive
 
 There are two basic operating modes:
  * In *normal* mode, each LED is individually driven based on the value in its
-   control register.
+   control register. All LEDs are updated either
+     ** when an I2C command finishes
+	 ** or in WAIT mode is set when a update command is issued
  * In *global* mode, all LEDs are driven to the same value, based on the values
    in the global value registers.
 
@@ -87,7 +89,9 @@ Writes look like this:
 | Start | Slave Address << 1 | Register Address | Data | Stop |
 |-------|--------------------|------------------|------|------|
 
-The register address will auto-increment after every byte, so you can write
+There is a 10bit address space from which the lower 8 bits are included in each 
+command and the upper two bits have to be set in the global control register.
+The register address will auto-increment after every byte, so you can write / read
 data in bursts.
 
 Reads look like this:
@@ -99,12 +103,17 @@ First you do a write transaction to set the register address to read from, then
 a read transaction to read the data. When you've read all the data you want,
 send a NAK after the last byte to terminate the read.
 
-**The LED values are only updated after a STOP is received**
+**In non WAIT mode, The LED values are only updated after a STOP is received**
+
+**Each time the LEDs are updated, the I2C is not responsice. It takes about xxx ms / 
+LED (xms/10LEDs) until new I2C commands can be received.**
 
 ## Register Map
 The register map consists of a number of global control registers - address
-0x0-0x3 - followed by an array of registers which hold the individual value
+0x000-0x004 - followed by an array of registers which hold the individual value
 for each LED in normal mode.
+
+### Address table for RGB Mode 
 
 | **Address** | **Name**     | **Description**      | **Access** | **Reset** |
 |------------:|--------------|:---------------------|--------|------:|
@@ -122,20 +131,25 @@ for each LED in normal mode.
 | (3*n) + 5   | **RED[n]**   | Red value, LEDn      | R/W    |    0  |
 | (3*n) + 6   | **BLUE[n]**  | Blue value, LEDn     | R/W    |    0  |
 |   ....      | ....         | ....                 | ....   | ....  |
-| (3*n) + 4   | **GREEN[n]** | Green value, LEDn    | R/W    |    0  |
-| (3*n) + 5   | **RED[n]**   | Red value, LEDn      | R/W    |    0  |
-| (3*n) + 6   | **BLUE[n]**  | Blue value, LEDn     | R/W    |    0  |
+| 0x3FB   | **GREEN[n]** | Green value, LEDn    | R/W    |    0  |
+| 0x3FC   | **RED[n]**   | Red value, LEDn      | R/W    |    0  |
+| 0x3FD   | **BLUE[n]**  | Blue value, LEDn     | R/W    |    0  |
+| 0x3FE   | RSVD | reserved | R/W    |    0  |
+| 0x3FF   | RSVD  | reserved     | R/W    |    0  |
 
+### Address table for RGBW Mode 
+
+t.b.d.
 
 ## Register Descriptions
 
 ### **CTRL**
 The control register sets the operating mode.
 
-|   Name: | RSVD | RSVD | RSVD | RSVD | RSVD | RSVD | GLB  | RST  |
+|   Name: | A9 | A8 | RSVD | RSVD | WAIT | SHOW | GLB  | RST  |
 |--------:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
 |    Bit: |    7 |    6 |    5 |    4 |    3 |    2 |    1 |    0 |
-| Access: |    r |    r |   r  |   r  |   r  |   r  |  rw  |  rw  |
+| Access: |    rw |    rw |   r  |   r  |   rw  |   w  |  rw  |  rw  |
 
 #### *RST*
 Writing a 1 to this bit will reset the LED controler, setting all LEDs to OFF
@@ -154,6 +168,23 @@ normal operation.
 ### **GLB_R**, **GLB_G**, **GLB_B**
 These registers hold the global colour value. When the *GLB* bit in the
 **CTRL** register is set, all LEDs will display this colour.
+
+### **SHOW** 
+Updates the LEDs with the current colors in local RAM. This bit is reset to 0 
+after sending the command to the LEDS
+
+### WAIT 
+
+0: WAIT mode turned off. All LEDs are updated after the STOP of the I2C command
+1: WAIT mode turned on. All LEDs are only updated if a SHOW command is sent.
+
+
+### **A9**, **A8** 
+High bits of the register map.
+
+Note: with a Burst command you can also write the complete address 
+range w/o change the upper address bits explicitly
+
 
 ### **LED Value Array**
 Everything after the global registers is an array of data for each LED.
