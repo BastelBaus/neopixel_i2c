@@ -1,16 +1,17 @@
 # neopixel_i2c_slave (picopixel)
 
-This is an AVR-based neopixel driver. It accepts commands over i2c to drive a
-a number of ws2812 LED pixels.
+This is an AVR-based neopixel driver. It accepts commands over I2C to drive a
+a number of ws2811/2 LED pixels. It was based on the usedbytes/neopixel_i2c
+implementation. It consists of a tiny slave module (Arduino IDE) and a control 
+class which can be included on the master.
 
-The code on the master branch is set up for an Attiny85, with the LEDs on PB3,
-using an usbasp programmer. The fuses should be set to use 8 MHz internal
-oscillator, **no divider**
 
 ## How many LEDs?
-The number of LEDs is currently hardcoded in the firmware. The maximum number
-depends on the amount of RAM available on your AVR.
-An Attiny45 should be able to drive 82 LEDs, and an Attiny85, 167.
+
+The maximum number depends on 
+  * the amount of RAM available on your AVR (Attiny45 ~82 LEDs, and an Attiny85 ~167 for RGB)
+  * the type of LED (RGB or RGBW) and
+  * the supported address space (current implementation 339 LEDs with 1024 addresses)
 
 ## Circuit
 
@@ -107,18 +108,24 @@ for each LED in normal mode.
 
 | **Address** | **Name**     | **Description**      | **Access** | **Reset** |
 |------------:|--------------|:---------------------|--------|------:|
-|   0x00      | **CTRL**     | Control Register     | R/W    |    0  |
-|   0x01      | **GLB_G**    | Global Green Value   | R/W    |    0  |
-|   0x02      | **GLB_R**    | Global Red Value     | R/W    |    0  |
-|   0x03      | **GLB_B**    | Global Blue Value    | R/W    |    0  |
+|   0x000      | **CTRL**     | Control Register     | R/W    |    0  |
+|   0x001      | **GLB_G**    | Global Green Value   | R/W    |    0  |
+|   0x002      | **GLB_R**    | Global Red Value     | R/W    |    0  |
+|   0x003      | **GLB_B**    | Global Blue Value    | R/W    |    0  |
+|   0x004      | **LED_CNT**  | total number of LEDs | R/W    |    0  |
 |Array follows|--------------|----------------------|--------|-------|
-|   0x04      | **GREEN[0]** | Green value, LED0    | R/W    |    0  |
-|   0x05      | **RED[0]**   | Red value, LED0      | R/W    |    0  |
-|   0x06      | **BLUE[0]**  | Blue value, LED0     | R/W    |    0  |
+|   0x005      | **GREEN[0]** | Green value, LED0    | R/W    |    0  |
+|   0x006      | **RED[0]**   | Red value, LED0      | R/W    |    0  |
+|   0x007      | **BLUE[0]**  | Blue value, LED0     | R/W    |    0  |
 |   ....      | ....         | ....                 | ....   | ....  |
 | (3*n) + 4   | **GREEN[n]** | Green value, LEDn    | R/W    |    0  |
 | (3*n) + 5   | **RED[n]**   | Red value, LEDn      | R/W    |    0  |
 | (3*n) + 6   | **BLUE[n]**  | Blue value, LEDn     | R/W    |    0  |
+|   ....      | ....         | ....                 | ....   | ....  |
+| (3*n) + 4   | **GREEN[n]** | Green value, LEDn    | R/W    |    0  |
+| (3*n) + 5   | **RED[n]**   | Red value, LEDn      | R/W    |    0  |
+| (3*n) + 6   | **BLUE[n]**  | Blue value, LEDn     | R/W    |    0  |
+
 
 ## Register Descriptions
 
