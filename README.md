@@ -131,11 +131,11 @@ for each LED in normal mode.
 | (3*n) + 5   | **RED[n]**   | Red value, LEDn      | R/W    |    0  |
 | (3*n) + 6   | **BLUE[n]**  | Blue value, LEDn     | R/W    |    0  |
 |   ....      | ....         | ....                 | ....   | ....  |
-| 0x3FB   | **GREEN[n]** | Green value, LEDn    | R/W    |    0  |
-| 0x3FC   | **RED[n]**   | Red value, LEDn      | R/W    |    0  |
-| 0x3FD   | **BLUE[n]**  | Blue value, LEDn     | R/W    |    0  |
-| 0x3FE   | RSVD | reserved | R/W    |    0  |
-| 0x3FF   | RSVD  | reserved     | R/W    |    0  |
+| 0x3FB   | **GREEN[338]** | Green value, LEDn    | R/W    |    0  |
+| 0x3FC   | **RED[338]**   | Red value, LEDn      | R/W    |    0  |
+| 0x3FD   | **BLUE[338]**  | Blue value, LEDn     | R/W    |    0  |
+| 0x3FE   | **RSVD** | reserved | R/W    |    0  |
+| 0x3FF   | **RSVD**  | reserved     | R/W    |    0  |
 
 ### Address table for RGBW Mode 
 
@@ -146,10 +146,11 @@ t.b.d.
 ### **CTRL**
 The control register sets the operating mode.
 
-|   Name: | A9 | A8 | RSVD | RSVD | WAIT | SHOW | GLB  | RST  |
+|   Name: | A9   |   A8 | RSVD | RGBW | WAIT | SHOW | GLB  | RST  |
 |--------:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
-|    Bit: |    7 |    6 |    5 |    4 |    3 |    2 |    1 |    0 |
-| Access: |    rw |    rw |   r  |   r  |   rw  |   w  |  rw  |  rw  |
+|    Bit: |   7  |    6 |    5 |    4 |    3 |    2 |    1 |    0 |
+| Access: |   rw |   rw |    r |   rw |   rw |   rw |  rw  |  rw  |
+| Reset:  |    0 |   0 |     0 |    0 |    0 |    0 |   0  |   0  |
 
 #### *RST*
 Writing a 1 to this bit will reset the LED controler, setting all LEDs to OFF
@@ -165,15 +166,17 @@ bit so that the new colour is immediately applied.
 Writing a zero to this bit will disable the global colour override and return to
 normal operation.
 
-### **GLB_R**, **GLB_G**, **GLB_B**
-These registers hold the global colour value. When the *GLB* bit in the
-**CTRL** register is set, all LEDs will display this colour.
 
-### **SHOW** 
+#### **SHOW** 
 Updates the LEDs with the current colors in local RAM. This bit is reset to 0 
 after sending the command to the LEDS
 
-### WAIT 
+#### **RGBW** 
+
+0: Default RGB mode(default)
+1: RGBW mode
+
+#### WAIT 
 
 0: WAIT mode turned off. All LEDs are updated after the STOP of the I2C command
 1: WAIT mode turned on. All LEDs are only updated if a SHOW command is sent.
@@ -184,6 +187,11 @@ High bits of the register map.
 
 Note: with a Burst command you can also write the complete address 
 range w/o change the upper address bits explicitly
+
+
+### **GLB_R**, **GLB_G**, **GLB_B**
+These registers hold the global colour value. When the *GLB* bit in the
+**CTRL** register is set, all LEDs will display this colour.
 
 
 ### **LED Value Array**
