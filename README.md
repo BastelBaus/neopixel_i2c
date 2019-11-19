@@ -107,15 +107,15 @@ setting pixel count
 * Updating the LED strip takes about 35us per LED
 
 Some example calculations are shown in the table below
-| total # of LEDs | updated LEDs* | I2C speed  | I2C duration  | LED update time  | total time
-|-----------------|---------------|------------|---------------|------------------|-----------
-|               1 |            1  |   100kHz   |       ~0.5ms  |           ~0.0ms |    ~0.5ms
-|             100 |            1  |   100kHz   |       ~0.5ms  |           ~0.4ms |    ~0.9ms 
-|             100 |          100  |   100kHz   |      ~50.0ms  |           ~3.5ms |   ~53.5ms  
-|-----------------|---------------|------------|---------------|------------------|-----------
-|               1 |            1  |   400kHz   |       ~0.1ms  |           ~0.0ms |    ~0.5ms
-|             100 |            1  |   400kHz   |       ~0.1ms  |           ~3.5ms |    ~0.9ms 
-|             100 |          100  |   400kHz   |      ~12.5ms  |           ~3.5ms |   ~16.0ms  
+| total \# of LEDs | updated LEDs* | I2C speed  | I2C duration  | LED update time  | total time|
+|------------------|---------------|------------|---------------|------------------|-----------|
+|                1 |            1  |   100kHz   |       ~0.5ms  |           ~0.0ms |    ~0.5ms |
+|              100 |            1  |   100kHz   |       ~0.5ms  |           ~0.4ms |    ~0.9ms |
+|              100 |          100  |   100kHz   |      ~50.0ms  |           ~3.5ms |   ~53.5ms |
+|------------------|---------------|------------|---------------|------------------|-----------|
+|                1 |            1  |   400kHz   |       ~0.1ms  |           ~0.0ms |    ~0.5ms |
+|              100 |            1  |   400kHz   |       ~0.1ms  |           ~3.5ms |    ~0.9ms |
+|              100 |          100  |   400kHz   |      ~12.5ms  |           ~3.5ms |   ~16.0ms |
 
 *) assuming singe LED setting and and no special modes
  
