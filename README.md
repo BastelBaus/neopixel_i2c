@@ -3,7 +3,7 @@
 This class is to abstract the comunication to the I2C slave to 
 control the neopixels. The slave code can be found in the subdirectory slave/.
 
-It was based on the slave code of usedbytes/neopixel_i2c.
+It was based on the slave code of [usedbytes/neopixel_i2c](https://github.com/usedbytes/neopixel_i2c).
 
 ## How many LEDs?
 
