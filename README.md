@@ -1,17 +1,30 @@
 # neopixel_i2c
 
-This class is to abstract the comunication to the I2C slave to 
-control the neopixels. The slave code can be found in the subdirectory slave/.
+This projects implements a way to control a WS2811/2 pixel array over 
+I2C by using an slave module (e.g. digispark ATTiny85). The man class abstracts 
+the comunication to the I2C slave to control the neopixels. The slave code 
+can be found in the subdirectory [slave/](slave/).
 
-It was based on the slave code of [usedbytes/neopixel_i2c](https://github.com/usedbytes/neopixel_i2c).
+The project was started based on the slave code of [usedbytes/neopixel_i2c](https://github.com/usedbytes/neopixel_i2c).
 
 ## How many LEDs?
 
 The maximum number depends on 
-  * the amount of RAM available on your AVR (Attiny45 ~82 LEDs, and an Attiny85 ~167 each for RGB)
+  * the amount of RAM available on your AVR 
   * the type of LED (RGB or RGBW) and
   * the supported address space (current implementation 339 LEDs with 1024 addresses)
 
+| slave device | colors | max. controlable LEDs  |
+|--------------|--------|------------------------|
+| ATTiny45     | RGB    | ~82                    |
+| ATTiny45     | RGBW   |  ?                     |
+| ATTiny85     | RGB    | 167                    |
+| ATTiny85     | RGBW   |  ?                     |
+| *1)          | RGB    |                        |
+| *1)          | RGBW   |                        |
+
+*) Device with maximum RAM, only limited by address space.
+ 
 ## Circuit
 
 Below is the circuit description for the default configured slave module in the subfolder slave/.
@@ -28,7 +41,7 @@ PB0: I2C - SDA
 ```
 
 For more details and deviating configurations see slave code in subfolder [slave/](slave/).
-For product dewscription, see [http://digistump.com/products/1](http://digistump.com/products/1).
+For product description, see [http://digistump.com/products/1](http://digistump.com/products/1).
 
 
 ### Suggested circuit for own implementation.
@@ -58,24 +71,60 @@ For product dewscription, see [http://digistump.com/products/1](http://digistump
 
 ```
 
-For more details and deviating configurations see slave code in subfolder slave/.
+For more details and deviating configurations see slave code in subfolder [slave/](slave/).
 
-## Getting the code
+# The slave
 
-This project uses git submodules (I kinda wish it didn't...). You can clone
-it like so:
+The slave device must be programmed with the code stored in the subfolder [slave/](slave/). 
+By default it is configured to work with the default configuration of the master.
 
-```git clone --recursive https://github.com/usedbytes/neopixel_i2c```
-
-If your git version is too old to support that, do this instead:
-
-```
-git clone --recursive https://github.com/usedbytes/neopixel_i2c
-cd neopixel_i2c
-git submodule update --init --recursive
-```
+# The control class for the master
 
 
+## Initialization
+
+I2C address
+maximum pixel count
+setting pixel count
+
+## Setting LED colors
+
+## Special functionalities
+
+### Direct update versus combined update
+
+### Direct update versus combined update
+
+## Additional notes
+
+* change of I2C speed
+
+## **Timing**
+
+* Changing a pixel over I2C with the default speed of 100kHz takes about 
+500us (I2C address + Reg Address + 3 bytes) for the I2C transfer.
+
+* Updating the LED strip takes about 35us per LED
+
+Some example calculations are shown in the table below
+| total # of LEDs | updated LEDs* | I2C speed  || I2C duration  | LED update time  | total time
+|-----------------|---------------|------------||---------------|------------------|-----------
+|               1 |            1  |   100kHz   ||       ~0.5ms  |           ~0.0ms |    ~0.5ms
+|             100 |            1  |   100kHz   ||       ~0.5ms  |           ~0.4ms |    ~0.9ms 
+|             100 |          100  |   100kHz   ||      ~50.0ms  |           ~3.5ms |   ~53.5ms  
+|-----------------|---------------|------------||---------------|------------------|-----------
+|               1 |            1  |   400kHz   ||       ~0.1ms  |           ~0.0ms |    ~0.5ms
+|             100 |            1  |   400kHz   ||       ~0.1ms  |           ~3.5ms |    ~0.9ms 
+|             100 |          100  |   400kHz   ||      ~12.5ms  |           ~3.5ms |   ~16.0ms  
+
+*) assuming singe LED setting and and no special modes
+ 
+*ToDo*: DO we have to wait for a new transfer or how is it handle in the master/slave ?
+
+
+
+
+# **slave docu**
 ## Basic Functionality
 
 There are two basic operating modes:
@@ -266,16 +315,4 @@ WIth this register, teh remaoning two IO ports can be configured
 Everything after the global registers is an array of data for each LED.
 When the *GLB* bit is not set, each LED will display whatever value is
 programmed in its corresponding register set.
-
-## **Timing*
-
-Chaning a pixel over I2C takes 500us (I2C address + REg Address + 3 bytes)
- + optinoally: 2* (
- 100 LEDs = 50ms
- 
- 
- setting 5 LEDs takes 190us
-  80 LEDs takes 2.8ms
-  35us per LED
- 
 
