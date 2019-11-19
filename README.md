@@ -28,6 +28,7 @@ PB0: I2C - SDA
 ```
 
 For more details and deviating configurations see slave code in subfolder slave/.
+For product dewscription, see [http://digistump.com/products/1]http://digistump.com/products/1 .
 
 
 ### Suggested circuit for own implementation.
