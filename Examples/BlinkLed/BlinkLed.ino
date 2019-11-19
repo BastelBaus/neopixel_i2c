@@ -1,19 +1,21 @@
 #include <neopixel_i2c.h>
 
-neopixel_I2C neoI2C(0x40);
+#define LED_COUNT    2
+#define I2C_ADDRESS  0x40
+
+neopixel_i2c neoI2C( I2C_ADDRESS );
 
 void setup() {
-  Serial.begin(57600);
-
-  neoI2C.setup(true);
-  neoI2C.setWaitMode(true);
+  neoI2C.setup(LED_COUNT); 
 }
 
+
 void loop() {
-  neoI2C.setPixelColor( 0, 0xFF,0xFF,0xFF);
-  neoI2C.show();
+
+  for(uint8_t i = 0; i < neoI2C.getPixelCount() ; i++)
+    neoI2C.setPixelColor( i, 0xFF,0xFF,0xFF);
   delay(300);
-  neoI2C.setPixelColor( 0, 0x00,0x00,0x00);
-  neoI2C.show();
+  
+  neoI2C.clear();
   delay(300);
 }

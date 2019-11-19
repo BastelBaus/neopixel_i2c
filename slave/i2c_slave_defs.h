@@ -19,18 +19,18 @@
 #define __I2C_SLAVE_DEFS__
 
 /* Set these appropriately for your platform */
-#define USI_PORT PORTB
-#define USI_DDR DDRB
-#define I2C_SDA 0
-#define I2C_SCL 2
+#define USI_PORT 	PORTB
+#define USI_DDR 	DDRB
+#define I2C_SDA 	0
+#define I2C_SCL 	2
 
+// I2C address and maximum number of LEDs
+#define I2C_SLAVE_ADDR 		0x40
+#define N_LEDS 				80 			// ((uint8_t)((2^8-4))/3))
+#define LED_COLS			3			// 3: for RGB 4: RGBW
 
-#define N_LEDS 84 // ((uint8_t)((2^8-4))/3))
 //#define N_LEDS (15+21+15+21+6+6)  
 //#define MAX_N_LEDS (2^16-4)  // limitation by 16 bit address
-#define I2C_N_GLB_REG 4
-#define I2C_N_REG (I2C_N_GLB_REG + (N_LEDS * 3))
-#define I2C_SLAVE_ADDR 0x40
 
 /*
  * The library supports a write mask for each individual register (bits set are
@@ -40,18 +40,33 @@
  */
 #define I2C_GLOBAL_WRITE_MASK 0xFF
 
+#define I2C_N_GLB_REG 	12		// should be dividable by 2, 3 and 4	
+#define I2C_N_REG 		(I2C_N_GLB_REG + (N_LEDS * LED_COLS))
+
 #define REG_CTRL    i2c_reg[0]
-#define     CTRL_RST    (1 << 0)
-#define     CTRL_GLB    (1 << 1)
-#define     CTRL_WAIT   (1 << 2) // if 1 only updates LED if CTRL set is set
-#define     CTRL_SET    (1 << 3) // if 1, al LEDs are set to array, after this passes, reset to 0
-
-#define REG_GLB_G   i2c_reg[1]
-#define REG_GLB_R   i2c_reg[2]
-#define REG_GLB_B   i2c_reg[3]
-
-#if ((N_LEDS*3+I2C_N_GLB_REG) > 256)
-  #error "above maximum suported lights !!"
-#endif
+  #define CTRL_RST    (1 << 0) // 
+  #define CTRL_GLB    (1 << 1)
+  #define CTRL_WAIT   (1 << 2) // 0: update each pixel after each command. 1: only updates pixels if CTRL_SHOW set is set
+  #define CTRL_SHOW   (1 << 3) // 1: all LEDs are set, after finish, value is reset to 0
+  #define CTRL_M0     (1 << 6) // M1:M0 = B00 ==> k=1   // M1:M0 = B01 ==> k=2
+  #define CTRL_M1     (1 << 7) // M1:M0 = B10 ==> k=3   // M1:M0 = B00 ==> k=4
+  #define GET_CTRL_k  ( ( (REG_CTRL &  (CTRL_M1|CTRL_M0)) >>6 )  + 1 )
+  
+#define REG_LED_CNT    i2c_reg[1]
+#define REG_MAX_LED    i2c_reg[2]
+#define REG_GLB_G      i2c_reg[3]
+#define REG_GLB_R      i2c_reg[4]
+#define REG_GLB_B      i2c_reg[5]
+#define REG_GPIO_CTRL  i2c_reg[6]
+   // Configure, set and get GPIOs
+  #define REG_GPIO0_CTRL    0
+  #define REG_GPIO0_IO      2
+  #define REG_GPIO1_CTRL    3
+  #define REG_GPIO1_IO      5 
+  #define GPIO_OUTPUT       0
+  #define GPIO_INPUT        1
+  #define GPIO_INPUT_PULLUP 2
+  
+#define REG_FIRSTLED   i2c_reg[I2C_N_GLB_REG]
 
 #endif /* __I2C_SLAVE_DEFS__ */

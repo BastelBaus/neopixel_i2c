@@ -45,9 +45,9 @@
 #define LED_FLICKER()
 #endif
 
-volatile uint8_t i2c_update = 0;
+volatile uint16_t i2c_update = 0;
 volatile uint8_t i2c_state = 0;
-volatile uint8_t i2c_offset = 0;
+volatile uint16_t i2c_offset = 0;
 
 /* USI i2c Slave State Machine
  * ===========================
@@ -195,7 +195,7 @@ ISR(USI_OVF_vect)
 				NAK();
 			} else {
 				/* Transition d */
-				i2c_offset = USIDR;
+				i2c_offset = (uint16_t) USIDR * GET_CTRL_k;      
 				i2c_state = I2C_STATE_MASTER_WRITE;
 				ACK();
 			}
