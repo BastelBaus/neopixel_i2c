@@ -188,7 +188,7 @@ A short description of the control register bits is depiced in the following tab
 | Bits  | # | description                                                    |
 |-------|---|----------------------------------------------------------------| 
 | RST   | 1 | 1: software reset the slave
-| RGBW  | 1 | 0: RGB mode, 1: RGBW mode 
+| RGBW  | 1 | 0: RGB mode, 1: RGBW mode (not supported in version 0x01
 | WAIT  | 1 | 0: direcly update pixels after each command
 |       |   | 1: only update on when show bit is set
 | SHOW  | 1 | 1: update all pixels

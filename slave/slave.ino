@@ -25,8 +25,9 @@ volatile uint8_t i2c_reg[I2C_N_REG];
 //}
 
 static inline void update_leds(void) {
-  ws2812_sendarray((uint8_t *) i2c_reg + I2C_N_GLB_REG, N_LEDS * LED_COLS);
-  CLRBIT(REG_CTRL0,CTRL0_SHOW);   
+  //ws2812_sendarray((uint8_t *) i2c_reg + I2C_N_GLB_REG, N_LEDS * LED_COLS);
+  ws2812_sendarray((uint8_t *) i2c_reg + I2C_N_GLB_REG, (uint16_t) i2c_reg[REG_LED_CNT] * LED_COLS);
+  CLRBITREG(REG_CTRL0,CTRL0_SHOW);   
 }
 
 void initialize(void) {
@@ -62,9 +63,9 @@ void fillRAMRegistersWithGlobal(void) {
   uint8_t k=2;
   while (i--) { 
 	switch(k) {
-	  case 0: *p = REG_GLB_G;  break;
-	  case 1: *p = REG_GLB_R;  break;
-	  case 2: *p = REG_GLB_B;  break;
+	  case 0: *p = i2c_reg[REG_GLB_G];  break;
+	  case 1: *p = i2c_reg[REG_GLB_R];  break;
+	  case 2: *p = i2c_reg[REG_GLB_B];  break;
 	}
 	if(k>0) k--; else k=2;
 	 
@@ -77,32 +78,32 @@ void fillRAMRegistersWithGlobal(void) {
 static inline void handleIOs(void) {
 
   // set or read IOs
-  if( ! ISBITSET(REG_CTRL1,CTRL1_IOa1) ) { 
-    pinMode(GPIOa,( ISBITSET(REG_CTRL1,CTRL1_IOa0) ? INPUT_PULLUP : INPUT ) ); 
-  } else if (! ISBITSET(REG_CTRL1,CTRL1_IOa0) ) {
+  if( ! ISBITSETREG(REG_CTRL1,CTRL1_IOa1) ) { 
+    pinMode(GPIOa,( ISBITSETREG(REG_CTRL1,CTRL1_IOa0) ? INPUT_PULLUP : INPUT ) ); 
+  } else if (! ISBITSETREG(REG_CTRL1,CTRL1_IOa0) ) {
     pinMode(GPIOa,OUTPUT ); 
   } else {} //reserved
 
-  if( ! ISBITSET(REG_CTRL1,CTRL1_IOb1) ) { 
-    pinMode(GPIOb,( ISBITSET(REG_CTRL1,CTRL1_IOb0) ? INPUT_PULLUP : INPUT ) ); 
-  } else if (! ISBITSET(REG_CTRL1,CTRL1_IOb0) ) {
+  if( ! ISBITSETREG(REG_CTRL1,CTRL1_IOb1) ) { 
+    pinMode(GPIOb,( ISBITSETREG(REG_CTRL1,CTRL1_IOb0) ? INPUT_PULLUP : INPUT ) ); 
+  } else if (! ISBITSETREG(REG_CTRL1,CTRL1_IOb0) ) {
     pinMode(GPIOb,OUTPUT ); 
   } else {} //reserved
 
 
 	// set or read IOs
-	if( ! ISBITSET(REG_CTRL1,CTRL1_IOa1) ) { 
-		if( digitalRead(GPIOa) ) SETBIT(REG_CTRL1,CTRL1_IOa2); 
-		else                     CLRBIT(REG_CTRL1,CTRL1_IOa2); 
-	} else if (! ISBITSET(REG_CTRL1,CTRL1_IOa0) ) {
-	  digitalWrite(GPIOa,(ISBITSET(REG_CTRL1,CTRL1_IOa2)?HIGH:LOW) );
+	if( ! ISBITSETREG(REG_CTRL1,CTRL1_IOa1) ) { 
+		if( digitalRead(GPIOa) ) SETBITREG(REG_CTRL1,CTRL1_IOa2); 
+		else                     CLRBITREG(REG_CTRL1,CTRL1_IOa2); 
+	} else if (! ISBITSETREG(REG_CTRL1,CTRL1_IOa0) ) {
+		digitalWrite(GPIOa,(ISBITSETREG(REG_CTRL1,CTRL1_IOa2)?HIGH:LOW) );
   } else {} //reserved
 
-	if( ! ISBITSET(REG_CTRL1,CTRL1_IOb1) ) { 
-		if( digitalRead(GPIOb) ) SETBIT(REG_CTRL1,CTRL1_IOb2); 
-		else                     CLRBIT(REG_CTRL1,CTRL1_IOb2); 
-  } else if (! ISBITSET(REG_CTRL1,CTRL1_IOb0) ) {
-    digitalWrite(GPIOb, (ISBITSET(REG_CTRL1,CTRL1_IOb2)?HIGH:LOW) );
+	if( ! ISBITSETREG(REG_CTRL1,CTRL1_IOb1) ) { 
+		if( digitalRead(GPIOb) ) SETBITREG(REG_CTRL1,CTRL1_IOb2); 
+		else                     CLRBITREG(REG_CTRL1,CTRL1_IOb2); 
+  } else if (! ISBITSETREG(REG_CTRL1,CTRL1_IOb0) ) {
+		digitalWrite(GPIOb, (ISBITSETREG(REG_CTRL1,CTRL1_IOb2)?HIGH:LOW) );
   } else {} //reserved
 
 }
@@ -124,20 +125,20 @@ void loop(void) {
 		// todo: only if relevant registers are updated!
 
     // reset the LEDs and slave configuration
-    if ( ISBITSET(REG_CTRL0,CTRL0_RST) ) {
+    if ( ISBITSETREG(REG_CTRL0,CTRL0_RST) ) {
       initialize();
       return;
     }
 
     // fill RAM with global LED value
-	  if( ISBITSET(REG_CTRL0,CTRL0_SETG) ) {
+	  if( ISBITSETREG(REG_CTRL0,CTRL0_SETG) ) {
 		  fillRAMRegistersWithGlobal();
-		  CLRBIT(REG_CTRL0,CTRL0_SETG);
+		  CLRBITREG(REG_CTRL0,CTRL0_SETG);
 	  }
 	  	  
 	  // show leds
-	  if ( ISBITSET(REG_CTRL0,CTRL0_WAIT) )   {
-		  if ISBITSET(REG_CTRL0,CTRL0_SHOW) update_leds();		    
+	  if ( ISBITSETREG(REG_CTRL0,CTRL0_WAIT) )   {
+		  if ISBITSETREG(REG_CTRL0,CTRL0_SHOW) update_leds();		    
 		}	else update_leds();
     
 	  

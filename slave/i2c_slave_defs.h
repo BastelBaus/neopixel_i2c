@@ -37,22 +37,16 @@
  */
 #define I2C_GLOBAL_WRITE_MASK 0xFF
 
-// set, test adn clear shortcuts
-#define ISBITSET(REG,BIT) ((i2c_reg[REG] & (1<<BIT)) != 0)
-#define SETBIT(REG,BIT)   (i2c_reg[REG] = i2c_reg[REG] | (1<<BIT))
-#define CLRBIT(REG,BIT)   (i2c_reg[REG] = i2c_reg[REG] & (~(1<<BIT)))
-#define SETREG(REG,BYTE)   (i2c_reg[REG] = BYTE)
-#define CMPREGBIT(REG,BIT, BYTE)  ( (i2c_reg[REG] & (~(1<<BIT))) == (BYTE & (~(1<<BIT))))
-
+// set, test and clear shortcuts for master
 #define ISBITSET(BYTE,BIT) 	 ((BYTE & (1<<BIT)) != 0)
-#define SETBIT(BYTE,BIT)   	 BYTE = i2c_reg[REG] | (1<<BIT)
-#define CLRBIT(BYTE,BIT)   	 BYTE = i2c_reg[REG] & (~(1<<BIT))
-#define SETREG(BYTE,NBYTE)   BYTE = NBYTE
+#define SETBIT(BYTE,BIT)   	 BYTE = BYTE | (1<<BIT)
+#define CLRBIT(BYTE,BIT)   	 BYTE = BYTE & (~(1<<BIT))
 
-#define ISBITSETREG(REG,BIT) ISBITSETREG(i2c_reg[REG],BIT)
-#define SETBITREG(REG,BIT)   SETBITREG(i2c_reg[REG],BIT)
-#define CLRBITREG(REG,BIT)   CLRBITREG(i2c_reg[REG],BIT)
-#define SETREG(REG,BYTE)     SETREG(i2c_reg[REG],BYTE)
+// set, test and clear shortcuts for slave using i2c_reg variable
+#define ISBITSETREG(REG,BIT) ISBITSET(i2c_reg[REG],BIT)
+#define SETBITREG(REG,BIT)   SETBIT(i2c_reg[REG],BIT)
+#define CLRBITREG(REG,BIT)   CLRBIT(i2c_reg[REG],BIT)
+#define SETREG(REG,BYTE)     i2c_reg[REG]=BYTE
 
 // control register addresses and bits 
 #define REG_CTRL0      0
@@ -63,7 +57,7 @@
   #define CTRL0_SETG     4 // M1:M0 = B00 ==> k=1   // M1:M0 = B01 ==> k=2
   #define CTRL0_M0       6 // M1:M0 = B00 ==> k=1   // M1:M0 = B01 ==> k=2
   #define CTRL0_M1       7 // M1:M0 = B10 ==> k=3   // M1:M0 = B00 ==> k=4
-  #define GET_CTRL_k     ( ( (i2c_reg[REG_CTRL0] &  (CTRL0_M1|CTRL0_M0)) >>6 )  + 1 )
+  #define GET_CTRL_k     ( ( (i2c_reg[REG_CTRL0] &  ((1<<CTRL0_M1)|(1<<CTRL0_M0))) >>6 )  + 1 )
   
 #define REG_CTRL1      1
   #define CTRL1_IOa0     0

@@ -28,7 +28,9 @@ bool neopixel_i2c::setup(uint8_t pixelCount, bool waitForShow) {
 #endif   
 
 void neopixel_i2c::reset(void) {
-  setRegister(REG_CTRL0,((1<<CTRL0_RST));
+  uint8_t reg = 0;
+  SETBIT(reg,CTRL0_RST);
+  setRegister(REG_CTRL0,reg);
 }
 /*****************************************************************/
 /* Utility functionality                                         */
@@ -57,11 +59,15 @@ uint8_t  neopixel_i2c::getPixelCount(void) {
 }
 
 void neopixel_i2c::setWaitMode(bool waitForShow) {
-  if (waitForShow)  setRegister(REG_CTRL0, getRegister(REG_CTRL0) | (CTRL0_WAIT) );
-  else				setRegister(REG_CTRL0, getRegister(REG_CTRL0) & (~(1<<CTRL0_WAIT)) );
+  uint8_t reg = getRegister(REG_CTRL0);
+  if (waitForShow)  SETBIT(reg , CTRL0_WAIT);
+  else				CLRBIT(reg , CTRL0_WAIT);
+  setRegister(REG_CTRL0, reg);
 }
 void neopixel_i2c::show(void) {
-  setRegister(REG_CTRL0, getRegister(REG_CTRL0) | (1<<CTRL0_SHOW) );
+  uint8_t reg = getRegister(REG_CTRL0);
+  SETBIT( reg, CTRL0_SHOW);
+  setRegister(REG_CTRL0, reg);
 }
 
 uint8_t neopixel_i2c::getVersion(void) {
@@ -114,22 +120,28 @@ void neopixel_i2c::setPixelColor(uint8_t ID, cRGB color) {
 void neopixel_i2c::setPixelColor(uint8_t ID, uint8_t r, uint8_t g, uint8_t b) {
   uint16_t adr = ID*3 + REG_FIRSTLED;
   bool scaleAdr = (adr > 255);
-  //bool scaleAdr = (adr > 9);
-
+  //bool scaleAdr = (adr > 9); // can be used to test scaling
+  
   // check for maximum address
   if ( adr > (256*3-1) ) return;
+
+  uint8_t reg = getRegister(REG_CTRL0);
   
   // if address would be higher than 255, set scaling address
-  if( scaleAdr ) {
-    //setRegister(REG_CTRL, (getRegister(REG_CTRL) & (~CTRL_M0) ) | CTRL_M1 );
-	//adr /= 3;
+  if( scaleAdr ) { 
+    CLRBIT(reg, CTRL0_M0); 
+	SETBIT(reg, CTRL0_M1); 
+    setRegister(REG_CTRL0, reg);
+	adr = adr/3;
   }	
   
-  setRegisters(adr,b,g,r);
+  setRegisters(adr,b,r,g);
 	
   // clear scaling bits
-  if( scaleAdr ) {
-	//setRegister(REG_CTRL, (getRegister(REG_CTRL) & (~CTRL_M0) ) & (~CTRL_M1) );
+  if( scaleAdr ) { 
+	CLRBIT(reg, CTRL0_M1); 
+	CLRBIT(reg, CTRL0_M0); 
+    setRegister(REG_CTRL0, reg);
   }
 }
 
@@ -137,8 +149,10 @@ void neopixel_i2c::setPixelColorGlobal(cRGB color, bool show) {
   setPixelColorGlobal(color.r,color.g,color.b,show);
 }
 void neopixel_i2c::setPixelColorGlobal(uint8_t r, uint8_t g, uint8_t b, bool show){
-  setRegisters(REG_GLB_G,b,g,r);
-  setRegister(REG_CTRL0,getRegister(REG_CTRL0) | (1<<CTRL0_SETG));
+  setRegisters(REG_GLB_G,b,r,g);
+  uint8_t reg = getRegister(REG_CTRL0);
+  SETBIT( reg, CTRL0_SETG);
+  setRegister(REG_CTRL0,reg);
   if(show) this->show();  
 }
 	
@@ -189,11 +203,12 @@ uint8_t neopixel_i2c::getGPIO(void) {
 	uint8_t ret = 0;
 	uint8_t reg = getRegister(REG_CTRL1);
 	
-	//if( (level & 0x03) == GPIOa_LOW)         reg = reg & ~B000100;
-	//else if( (level & 0x03) == GPIOa_HIGH) 	 reg = reg |  B000100;
-
-	//if( (level & 0x30) == GPIOb_LOW)         reg = reg & ~B100000;
-	//else if( (level & 0x30) == GPIOb_HIGH) 	 reg = reg |  B100
+	if ( ISBITSET(reg,CTRL1_IOa2) ) ret |= GPIOa_HIGH;
+	else						    ret |= GPIOa_LOW;
+	
+	if ( ISBITSET(reg,CTRL1_IOb2) ) ret |= GPIOb_HIGH;
+	else						    ret |= GPIOb_LOW;
+	
 	return  ret;
 }
 	
