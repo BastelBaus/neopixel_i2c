@@ -29,9 +29,6 @@
 #define N_LEDS 				80 			// ((uint8_t)((2^8-4))/3))
 #define LED_COLS			3			// 3: for RGB 4: RGBW
 
-//#define N_LEDS (15+21+15+21+6+6)  
-//#define MAX_N_LEDS (2^16-4)  // limitation by 16 bit address
-
 /*
  * The library supports a write mask for each individual register (bits set are
  * writable) in the i2c_w_mask array. If you don't care about masks for each
@@ -40,33 +37,53 @@
  */
 #define I2C_GLOBAL_WRITE_MASK 0xFF
 
-#define I2C_N_GLB_REG 	12		// should be dividable by 2, 3 and 4	
-#define I2C_N_REG 		(I2C_N_GLB_REG + (N_LEDS * LED_COLS))
+// set, test adn clear shortcuts
+#define ISBITSET(REG,BIT) ((i2c_reg[REG] & (1<<BIT)) != 0)
+#define SETBIT(REG,BIT)   (i2c_reg[REG] = i2c_reg[REG] | (1<<BIT))
+#define CLRBIT(REG,BIT)   (i2c_reg[REG] = i2c_reg[REG] & (~(1<<BIT)))
+#define SETREG(REG,BYTE)   (i2c_reg[REG] = BYTE)
+#define CMPREGBIT(REG,BIT, BYTE)  ( (i2c_reg[REG] & (~(1<<BIT))) == (BYTE & (~(1<<BIT))))
 
-#define REG_CTRL    i2c_reg[0]
-  #define CTRL_RST    (1 << 0) // 
-  #define CTRL_GLB    (1 << 1)
-  #define CTRL_WAIT   (1 << 2) // 0: update each pixel after each command. 1: only updates pixels if CTRL_SHOW set is set
-  #define CTRL_SHOW   (1 << 3) // 1: all LEDs are set, after finish, value is reset to 0
-  #define CTRL_M0     (1 << 6) // M1:M0 = B00 ==> k=1   // M1:M0 = B01 ==> k=2
-  #define CTRL_M1     (1 << 7) // M1:M0 = B10 ==> k=3   // M1:M0 = B00 ==> k=4
-  #define GET_CTRL_k  ( ( (REG_CTRL &  (CTRL_M1|CTRL_M0)) >>6 )  + 1 )
+#define ISBITSET(BYTE,BIT) 	 ((BYTE & (1<<BIT)) != 0)
+#define SETBIT(BYTE,BIT)   	 BYTE = i2c_reg[REG] | (1<<BIT)
+#define CLRBIT(BYTE,BIT)   	 BYTE = i2c_reg[REG] & (~(1<<BIT))
+#define SETREG(BYTE,NBYTE)   BYTE = NBYTE
+
+#define ISBITSETREG(REG,BIT) ISBITSETREG(i2c_reg[REG],BIT)
+#define SETBITREG(REG,BIT)   SETBITREG(i2c_reg[REG],BIT)
+#define CLRBITREG(REG,BIT)   CLRBITREG(i2c_reg[REG],BIT)
+#define SETREG(REG,BYTE)     SETREG(i2c_reg[REG],BYTE)
+
+// control register addresses and bits 
+#define REG_CTRL0      0
+  #define CTRL0_RST      0 // 
+  #define CTRL0_RGBW     1
+  #define CTRL0_WAIT     2 // 0: update each pixel after each command. 1: only updates pixels if CTRL_SHOW set is set
+  #define CTRL0_SHOW     3 // 1: all LEDs are set, after finish, value is reset to 0
+  #define CTRL0_SETG     4 // M1:M0 = B00 ==> k=1   // M1:M0 = B01 ==> k=2
+  #define CTRL0_M0       6 // M1:M0 = B00 ==> k=1   // M1:M0 = B01 ==> k=2
+  #define CTRL0_M1       7 // M1:M0 = B10 ==> k=3   // M1:M0 = B00 ==> k=4
+  #define GET_CTRL_k     ( ( (i2c_reg[REG_CTRL0] &  (CTRL0_M1|CTRL0_M0)) >>6 )  + 1 )
   
-#define REG_LED_CNT    i2c_reg[1]
-#define REG_MAX_LED    i2c_reg[2]
-#define REG_GLB_G      i2c_reg[3]
-#define REG_GLB_R      i2c_reg[4]
-#define REG_GLB_B      i2c_reg[5]
-#define REG_GPIO_CTRL  i2c_reg[6]
-   // Configure, set and get GPIOs
-  #define REG_GPIO0_CTRL    0
-  #define REG_GPIO0_IO      2
-  #define REG_GPIO1_CTRL    3
-  #define REG_GPIO1_IO      5 
-  #define GPIO_OUTPUT       0
-  #define GPIO_INPUT        1
-  #define GPIO_INPUT_PULLUP 2
+#define REG_CTRL1      1
+  #define CTRL1_IOa0     0
+  #define CTRL1_IOa1     1
+  #define CTRL1_IOa2     2
+  #define CTRL1_IOb0     3
+  #define CTRL1_IOb1     4
+  #define CTRL1_IOb2     5
   
-#define REG_FIRSTLED   i2c_reg[I2C_N_GLB_REG]
+#define REG_LED_CNT    2
+#define REG_MAX_LED    3
+#define REG_GLB_G      4
+#define REG_GLB_R      5
+#define REG_GLB_B      6
+#define REG_GLB_W      7
+#define REG_VER        8
+
+#define REG_FIRSTLED  12 // should be dividable by 2, 3 and 4	
+
+#define I2C_N_REG 	   (REG_FIRSTLED + (N_LEDS * LED_COLS))
+#define I2C_N_GLB_REG   REG_FIRSTLED
 
 #endif /* __I2C_SLAVE_DEFS__ */

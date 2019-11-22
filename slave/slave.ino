@@ -13,15 +13,20 @@
 #include "i2c_machine.h"
 #include "light_ws2812.h"
 
-volatile uint8_t i2c_reg[I2C_N_REG];
-const uint8_t init_color[LED_COLS] PROGMEM = { 0xFF, 0xFF, 0xFF };
+#define CODE_VERSION  0x01
 
-static inline void set_leds_global(void) {
-  ws2812_setleds_constant((struct cRGB *)&REG_GLB_G, N_LEDS);
-}
+#define GPIOa   	  PB1
+#define GPIOb   	  PB4
+
+volatile uint8_t i2c_reg[I2C_N_REG];
+
+//static inline void set_leds_global(void) {
+//  ws2812_setleds_constant((struct cRGB *)&i2c_reg[REG_GLB_G], N_LEDS);
+//}
 
 static inline void update_leds(void) {
   ws2812_sendarray((uint8_t *) i2c_reg + I2C_N_GLB_REG, N_LEDS * LED_COLS);
+  CLRBIT(REG_CTRL0,CTRL0_SHOW);   
 }
 
 void initialize(void) {
@@ -29,54 +34,112 @@ void initialize(void) {
   cli();
   
   // clear all LEDs 
-  REG_GLB_G = 0;
-  REG_GLB_R = 0;
-  REG_GLB_B = 0;
-  ws2812_setleds_constant((struct cRGB *)&REG_GLB_G, N_LEDS);
-  REG_GLB_G = pgm_read_byte(init_color);
-  REG_GLB_R = pgm_read_byte(init_color + 1);
-  REG_GLB_B = pgm_read_byte(init_color + 2);
-  
   // initialize all control registers
-  REG_CTRL      = 0;
-  REG_LED_CNT   = 1;
-  REG_MAX_LED   = N_LEDS;
-  REG_GLB_G     = 0;
-  REG_GLB_R     = 0;
-  REG_GLB_B     = 0;
-  //REG_GLB_W   = 0;
-  REG_GPIO_CTRL = 0;   
- 
+  SETREG(REG_CTRL0,0);
+  SETREG(REG_CTRL1,0);
+  SETREG(REG_LED_CNT,0);
+  SETREG(REG_MAX_LED,N_LEDS);
+  SETREG(REG_GLB_G,0);
+  SETREG(REG_GLB_R,0);
+  SETREG(REG_GLB_B,0);
+  SETREG(REG_GLB_W,0);  
+  SETREG(REG_VER,CODE_VERSION);
+  ws2812_setleds_constant((struct cRGB *)&i2c_reg[REG_GLB_G], N_LEDS);
+  
   // Reset the LED registers to zero 
   volatile uint8_t *p = i2c_reg + I2C_N_GLB_REG;
   uint16_t i = I2C_N_GLB_REG + N_LEDS*LED_COLS;
   while (i--) { *p = 0; p++; }
   // todo: replace with memset
-
+  
+  handleIOs();
   sei();
 }
 
+void fillRAMRegistersWithGlobal(void) {
+  volatile uint8_t *p = i2c_reg + I2C_N_GLB_REG;
+  uint16_t i = I2C_N_GLB_REG + N_LEDS*LED_COLS;
+  uint8_t k=2;
+  while (i--) { 
+	switch(k) {
+	  case 0: *p = REG_GLB_G;  break;
+	  case 1: *p = REG_GLB_R;  break;
+	  case 2: *p = REG_GLB_B;  break;
+	}
+	if(k>0) k--; else k=2;
+	 
+	p++; 
+  }
+}
+
+
+
+static inline void handleIOs(void) {
+
+  // set or read IOs
+  if( ! ISBITSET(REG_CTRL1,CTRL1_IOa1) ) { 
+    pinMode(GPIOa,( ISBITSET(REG_CTRL1,CTRL1_IOa0) ? INPUT_PULLUP : INPUT ) ); 
+  } else if (! ISBITSET(REG_CTRL1,CTRL1_IOa0) ) {
+    pinMode(GPIOa,OUTPUT ); 
+  } else {} //reserved
+
+  if( ! ISBITSET(REG_CTRL1,CTRL1_IOb1) ) { 
+    pinMode(GPIOb,( ISBITSET(REG_CTRL1,CTRL1_IOb0) ? INPUT_PULLUP : INPUT ) ); 
+  } else if (! ISBITSET(REG_CTRL1,CTRL1_IOb0) ) {
+    pinMode(GPIOb,OUTPUT ); 
+  } else {} //reserved
+
+
+	// set or read IOs
+	if( ! ISBITSET(REG_CTRL1,CTRL1_IOa1) ) { 
+		if( digitalRead(GPIOa) ) SETBIT(REG_CTRL1,CTRL1_IOa2); 
+		else                     CLRBIT(REG_CTRL1,CTRL1_IOa2); 
+	} else if (! ISBITSET(REG_CTRL1,CTRL1_IOa0) ) {
+	  digitalWrite(GPIOa,(ISBITSET(REG_CTRL1,CTRL1_IOa2)?HIGH:LOW) );
+  } else {} //reserved
+
+	if( ! ISBITSET(REG_CTRL1,CTRL1_IOb1) ) { 
+		if( digitalRead(GPIOb) ) SETBIT(REG_CTRL1,CTRL1_IOb2); 
+		else                     CLRBIT(REG_CTRL1,CTRL1_IOb2); 
+  } else if (! ISBITSET(REG_CTRL1,CTRL1_IOb0) ) {
+    digitalWrite(GPIOb, (ISBITSET(REG_CTRL1,CTRL1_IOb2)?HIGH:LOW) );
+  } else {} //reserved
+
+}
+
+
 void setup(void) {
-
   DDRB = (1 << 3);
-
   i2c_init();
   initialize();
 }
 
+//ToDo: switch RGBW mode
+
 void loop(void) {
 
+	handleIOs();
+ 
 	if (i2c_check_stop()) {
-	
-	  if (REG_CTRL & CTRL_RST)         initialize();
-	  else if (REG_CTRL & CTRL_GLB)    set_leds_global();
-	  else if (REG_CTRL & CTRL_WAIT) {
-		if (REG_CTRL & CTRL_SHOW ) {
-		  update_leds();
-		  REG_CTRL &=  ~CTRL_SHOW; // clear show bit
-		} else { } // do nothning
-	  } else							update_leds();
-	  // todo: only update if LEDs are updated
+		// todo: only if relevant registers are updated!
+
+    // reset the LEDs and slave configuration
+    if ( ISBITSET(REG_CTRL0,CTRL0_RST) ) {
+      initialize();
+      return;
+    }
+
+    // fill RAM with global LED value
+	  if( ISBITSET(REG_CTRL0,CTRL0_SETG) ) {
+		  fillRAMRegistersWithGlobal();
+		  CLRBIT(REG_CTRL0,CTRL0_SETG);
+	  }
+	  	  
+	  // show leds
+	  if ( ISBITSET(REG_CTRL0,CTRL0_WAIT) )   {
+		  if ISBITSET(REG_CTRL0,CTRL0_SHOW) update_leds();		    
+		}	else update_leds();
+    
 	  
 	} // if (i2c_check_stop()) {
 }

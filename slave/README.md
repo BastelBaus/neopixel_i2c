@@ -1,32 +1,50 @@
 # neopixel_i2c_slave (picopixel)
 
-This is an AVR-based neopixel driver. It accepts commands over I2C to drive a
+This is an AVR-based neopixel driver slave. It accepts commands over I2C to drive a
 a number of ws2811/2 LED pixels. It was based on the usedbytes/neopixel_i2c
-implementation. It consists of a tiny slave module (Arduino IDE) and a control 
-class which can be included on the master.
+implementation. For introduction see [BastelBaus/neopixel_i2c](https://github.com/BastelBaus/neopixel_i2c). 
 
 
 ## How many LEDs?
 
+
 The maximum number depends on 
-  * the amount of RAM available on your AVR (Attiny45 ~82 LEDs, and an Attiny85 ~167 each for RGB)
+  * the amount of RAM available on your AVR 
   * the type of LED (RGB or RGBW) and
-  * the supported address space (current implementation 338 LEDs with 1024 addresses)
+  * the supported address space (current implementation 339 LEDs with 1024 addresses)
+
+| slave device | colors | max. controlable LEDs  |
+|--------------|--------|------------------------|
+| ATTiny45     | RGB    | ~82                    |
+| ATTiny45     | RGBW   |  ?                     |
+| ATTiny85     | RGB    | 167                    |
+| ATTiny85     | RGBW   |  ?                     |
+| *1)          | RGB    |                        |
+| *1)          | RGBW   |                        |
+
+*) Device with maximum RAM, only limited by address space.
+
 
 ## Circuit
 
+Below is the circuit description for the default configured slave module in the subfolder slave/.
 
-### Defaultr Pin assignment on a digisparc ATTiny85.
+### Default pin assignment on a digisparc ATTiny85.
 
-PB6: not used
-PB5: GPIO2
-PB4: GPIO1
+```
+PB5: not used
+PB4: GPIOb
 PB3: NeoPixelData
 PB2: I2C - SCL
-PB1: GPIO0
+PB1: GPIOa
 PB0: I2C - SDA
+```
 
-### Suggested circuit from the scratch.
+For more details and deviating configurations see slave code in subfolder [slave/](slave/).
+For product description, see [http://digistump.com/products/1](http://digistump.com/products/1).
+
+
+### Suggested circuit for own implementation.
 
 ```
                             ^ VCC
@@ -42,7 +60,7 @@ PB0: I2C - SDA
   _____  ,---------|            SCL |-----------+-------|-----<> SCL
     |    |         |                |                   |
     |    |         |                |                   |
-    |    |       --|                |--                 |
+    |    | GPIOb<--|                |-->GPIOa           |
     |    |         |                |                   |
     |    |         |                |                   |
     +----|---+-----| GND        SDA |-------------------+-----<> SDA
@@ -53,57 +71,29 @@ PB0: I2C - SDA
 
 ```
 
-## Getting the code
+## Functionality
 
-This project uses git submodules (I kinda wish it didn't...). You can clone
-it like so:
-
-```git clone --recursive https://github.com/usedbytes/neopixel_i2c```
-
-If your git version is too old to support that, do this instead:
-
-```
-git clone --recursive https://github.com/usedbytes/neopixel_i2c
-cd neopixel_i2c
-git submodule update --init --recursive
-```
+Over I2C several control register can be used to setup and control the behavior of the slave. The slave has 
+a maximum number address spaces for the LEDs (depening on RAM). The used LEDs can be configured over a register.
+Each pixel can be addressed seprately and updated directly or with  a global LED update commad.
 
 
-## Basic Functionality
+### **on reset**
 
-There are two basic operating modes:
- * In *normal* mode, each LED is individually driven based on the value in its
-   control register. All LEDs are updated either
-     ** when an I2C command finishes
-	 ** or in WAIT mode is set when a update command is issued
- * In *global* mode, all LEDs are driven to the same value, based on the values
-   in the global value registers.
-
-The operating modes are selected by flipping the *GLB* bit in the **CTRL**
-register.
+All registers are set to their initial values and the LEDs (maximum numbers configures in the slave) are set to off.
 
 ## i2c Protocol
 
-**The slave address is currently hardcoded to 0x40 in the firmware**, see
+**The slave address is currently hardcoded to 0x40 in the firmware**, see ```i2c/i2c_slave_defs.h:30 ```.
 
-```
-i2c/i2c_slave_defs.h:30
-```
-
-
-This utilises my i2c slave library (https://github.com/usedbytes/usi_i2c_slave)
+This utilises the i2c slave library (https://github.com/usedbytes/usi_i2c_slave)
 which means it follows a fairly standard i2c protocol (for more, see here:
 http://www.robot-electronics.co.uk/i2c-tutorial).
 
 Writes look like this:
 
-| Start | Slave Address << 1 | Register Address | Data | Stop |
+| Start | Slave Address << 1 | RegAdrPointer    | Data | Stop |
 |-------|--------------------|------------------|------|------|
-
-There is a 10bit address space from which the lower 8 bits are included in each 
-command and the upper two bits have to be set in the global control register.
-The register address will auto-increment after every byte, so you can write / read
-data in bursts.
 
 Reads look like this:
 
@@ -114,98 +104,177 @@ First you do a write transaction to set the register address to read from, then
 a read transaction to read the data. When you've read all the data you want,
 send a NAK after the last byte to terminate the read.
 
-**In non WAIT mode, The LED values are only updated after a STOP is received**
+* The RegAdrPointer is multiplied at the slave with the 
+	multiplication factor k to determine the starting register address.
+* The register address will auto-increment after every byte, so you can write / read
+data in bursts.
+* **In non WAIT mode, the LED values are only updated after a STOP is received**
 
-**Each time the LEDs are updated, the I2C is not responsice. It takes about xxx ms / 
-LED (xms/10LEDs) until new I2C commands can be received.**
+* ** Each time the LEDs are updated, the I2C is not responsive.** (ToDo CHeck if valid). See next below for detailed timing description.
 
 ## Register Map
+
 The register map consists of a number of global control registers - address
-0x000-0x004 - followed by an array of registers which hold the individual value
-for each LED in normal mode.
+0x00-0x0C - followed by an array of registers which hold the individual value
+for each LED in normal mode (3 for RGB and 4 for RGBW).
 
 ### Address table for RGB Mode 
 
-| **Address** | **Name**     | **Description**      | **Access** | **Reset** |
-|------------:|--------------|:---------------------|--------|------:|
-|   0x000      | **CTRL**     | Control Register     | R/W    |    0  |
-|   0x001      | **GLB_G**    | Global Green Value   | R/W    |    0  |
-|   0x002      | **GLB_R**    | Global Red Value     | R/W    |    0  |
-|   0x003      | **GLB_B**    | Global Blue Value    | R/W    |    0  |
-|   0x004      | **LED_CNT**  | total number of LEDs | R/W    |    0  |
-|Array follows|--------------|----------------------|--------|-------|
-|   0x005      | **GREEN[0]** | Green value, LED0    | R/W    |    0  |
-|   0x006      | **RED[0]**   | Red value, LED0      | R/W    |    0  |
-|   0x007      | **BLUE[0]**  | Blue value, LED0     | R/W    |    0  |
-|   ....      | ....         | ....                 | ....   | ....  |
-| (3*n) + 4   | **GREEN[n]** | Green value, LEDn    | R/W    |    0  |
-| (3*n) + 5   | **RED[n]**   | Red value, LEDn      | R/W    |    0  |
-| (3*n) + 6   | **BLUE[n]**  | Blue value, LEDn     | R/W    |    0  |
-|   ....      | ....         | ....                 | ....   | ....  |
-| 0x3FB   | **GREEN[338]** | Green value, LEDn    | R/W    |    0  |
-| 0x3FC   | **RED[338]**   | Red value, LEDn      | R/W    |    0  |
-| 0x3FD   | **BLUE[338]**  | Blue value, LEDn     | R/W    |    0  |
-| 0x3FE   | **RSVD** | reserved | R/W    |    0  |
-| 0x3FF   | **RSVD**  | reserved     | R/W    |    0  |
+| **Address** | **Name**       | **Description**      | **Access** | **Reset** |
+|------------:|----------------|:---------------------|--------|------:|
+|   0x00      | **CTRL0**      | Control Register 0   | R/W    |    0  |
+|   0x01	  | **CTRL1**      | Control Register 1   | R/W    |    0  |
+|   0x02      | **LED_CNT**    | used number of LEDs  | R/W    |    1  |
+|   0x03      | **MAX_LED**    | max number of LEDs   | R      |  MAX  |
+|   0x04      | **GLB_G**      | Global Green Value   | R/W    | 0x00  |
+|   0x05      | **GLB_R**      | Global Red Value     | R/W    | 0x00  |
+|   0x06      | **GLB_B**      | Global Blue Value    | R/W    | 0x00  |
+|   0x07      | **GLB_W**      | Global Blue Value    | R/W    |    0  |
+|   0x08      | **VER**        | Slave SW version     | R/W    | 0x01  |
+|   0x09      | RSV            | Reserved             | R/W    |    0  |
+|   0x0A      | RSV            | Reserved             | R/W    |    0  |
+|   0x0B      | RSV            | Reserved             | R/W    |    0  |
+| RGB Array   |----------------|----------------------|--------|-------|
+|   0x0C      | **GREEN[0]**   | Green value, LED0    | R/W    |    0  |
+|   0x0D      | **RED[0]**     | Red value, LED0      | R/W    |    0  |
+|   0x0E      | **BLUE[0]**    | Blue value, LED0     | R/W    |    0  |
+|   0x0F      | **GREEN[1]**   | Green value, LED1    | R/W    |    0  |
+|   ....      |     ....       | ....                 | ....   | ....  |
+|  3*n + 0x0C | **GREEN[n]**   | Green value, LEDn    | R/W    |    0  |
+|  3*n+1+0x0C | **RED[n]**     | Red value, LEDn      | R/W    |    0  |
+|  3*n+2+0x0C | **BLUE[n]**    | Blue value, LEDn     | R/W    |    0  |
+|   ....      | ....           | ....                 | ....   | ....  |
 
 ### Address table for RGBW Mode 
 
-t.b.d.
+| **Address** | **Name**       | **Description**      | **Access** | **Reset** |
+|------------:|----------------|:---------------------|--------|------:|
+|       	  |   |         |       |      |
+|   as above  | as above       | as above     |     |      |
+|       	  |   |         |       |      |
+| RGBW Array  |----------------|----------------------|--------|-------|
+|   0x0C      | **GREEN[0]**   | Green value, LED0    | R/W    |    0  |
+|   0x0D      | **RED[0]**     | Red value, LED0      | R/W    |    0  |
+|   0x0E      | **BLUE[0]**    | Blue value, LED0     | R/W    |    0  |
+|   0x0F      | **WHITE[0]**   | Blue value, LED0     | R/W    |    0  |
+|   0x10      | **GREEN[1]**   | Green value, LED1    | R/W    |    0  |
+|   ....      | ....           | ....                 | ....   | ....  |
+| 4*n + 0x0C  | **GREEN[n]**   | Green value, LEDn    | R/W    |    0  |
+| 4*n+1+0x0C  | **RED[n]**     | Red value, LEDn      | R/W    |    0  |
+| 4*n+2+0x0C  | **BLUE[n]**    | Blue value, LEDn     | R/W    |    0  |
+| 4*n+3+0x0C  | **WHITE[n]**   | White value, LEDn    | R/W    |    0  |
+|   ....      | ....           | ....                 | ....   | ....  |
 
 ## Register Descriptions
 
 ### **CTRL**
-The control register sets the operating mode.
 
-|   Name: | A9   |   A8 | RSVD | RGBW | WAIT | SHOW | GLB  | RST  |
+The both control register sets the operating mode and special operations.
+
+|  CTRL0: |   M1 |   M0 |  RSV | SETG | SHOW | WAIT | RGBW | RST  |
 |--------:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
 |    Bit: |   7  |    6 |    5 |    4 |    3 |    2 |    1 |    0 |
-| Access: |   rw |   rw |    r |   rw |   rw |   rw |  rw  |  rw  |
+| Access: |   rw |   rw |   rw |   rw |   rw |   rw |  rw  |  rw  |
 | Reset:  |    0 |   0 |     0 |    0 |    0 |    0 |   0  |   0  |
 
-#### *RST*
-Writing a 1 to this bit will reset the LED controler, setting all LEDs to OFF
+|  CTRL1: |  RSV |  RSV | IOb2 | IOb1 | IOb0 | IOa2 | IOa1 | IOa0 |
+|--------:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|:----:|
+|    Bit: |   7  |    6 |    5 |    4 |    3 |    2 |    1 |    0 |
+| Access: |   rw |   rw |   rw |   rw |   rw |   rw |  rw  |  rw  |
+| Reset:  |    0 |    0 |    0 |    0 |    0 |    0 |   0  |   0  |
 
+A short description of the control register bits is depiced in the following table. A detailed description follows in the sections below.
+
+| Bits  | # | description                                                    |
+|-------|---|----------------------------------------------------------------| 
+| RST   | 1 | 1: software reset the slave
+| RGBW  | 1 | 0: RGB mode, 1: RGBW mode 
+| WAIT  | 1 | 0: direcly update pixels after each command
+|       |   | 1: only update on when show bit is set
+| SHOW  | 1 | 1: update all pixels
+| SETG  | 1 | 1: set all pixels to GLB color
+| M1:M0 | 2 | scale ADR by factor k ( 0: k=1, 1: k=2, 2:k=3, 3: k=4)
+| IOa1:0| 2 | GPIO_a [ b00: INPUT, b01: INPUT_PULLUP, B10: OUTPUT  B11: RESERVED ]
+| IOa2  | 2 | GPIO_a read/write value
+| IOb1:0| 2 | GPIO_b [ b00: INPUT, b01: INPUT_PULLUP, B10: OUTPUT  B11: RESERVED ]
+| IOb2  | 2 | GPIO_b read/write value
+
+
+#### *RST*
+
+Writing a 1 to this bit will reset the LED controler, setting all LEDs to OFF. 
 This bit will be automatically cleared once the reset has completed.
 
-#### *GLB*
+#### *SETG*
 Writing a one to this bit causes the global color value to be displayed on all
-LEDs at the end of the transaction - Normally you would set the **GLB_R**,
-**GLB_G**, and **GLB_B** values in the same transaction as setting the *GLB*
-bit so that the new colour is immediately applied.
+LEDs at the end of the transaction.
 
 Writing a zero to this bit will disable the global colour override and return to
 normal operation.
 
-
 #### **SHOW** 
 Updates the LEDs with the current colors in local RAM. This bit is reset to 0 
 after sending the command to the LEDS
+
+#### **WAIT** 
+
+0: WAIT mode turned off. All LEDs are updated after the STOP of each(!) I2C command
+1: WAIT mode turned on. All LEDs are only updated if a SHOW command is sent.
+
+#### **CLR** 
+
+0: 
+1: 
 
 #### **RGBW** 
 
 0: Default RGB mode(default)
 1: RGBW mode
 
-#### WAIT 
+#### **M1**, **M0** 
+>M1 and M0 are the multiplication factors to address more than 84 LEDs in RGB mode 
+and x LEDs in RGBW mode respectively
 
-0: WAIT mode turned off. All LEDs are updated after the STOP of the I2C command
-1: WAIT mode turned on. All LEDs are only updated if a SHOW command is sent.
+| M1 | M0 | multiplication factor k | 
+|----|----|-------------------------|
+|  0 |  0 | k=1 (default)           |
+|  0 |  1 | k=2                     |
+|  1 |  0 | k=3                     |
+|  1 |  1 | k=4                     |
 
+With this logic, 252 LEDs could be addressed maximum.
 
-#### **A9**, **A8** 
-High bits of the register map.
-
-Note: with a Burst command you can also write the complete address 
-range w/o change the upper address bits explicitly
+Note: The address is always incremented after a write/read with 1
 
 
 ### **GLB_R**, **GLB_G**, **GLB_B**
 These registers hold the global colour value. When the *GLB* bit in the
 **CTRL** register is set, all LEDs will display this colour.
 
+### **GPIO_CTRL**
+With this register, the remaining two IO ports can be configured
+
+2bit IO
+1bit status
+2* ==> 6bit
+
+2bit free
+
+2 or 3 bits
+
+4..5 bits
+
+SETGLOBAL
+CLEAR (Set to 000)
+
+2,3,4
+
+### **VER** Version
+
+Version is set to 0x01 in the current stream. Will be counted up for future major relases.
 
 ### **LED Value Array**
 Everything after the global registers is an array of data for each LED.
 When the *GLB* bit is not set, each LED will display whatever value is
 programmed in its corresponding register set.
+

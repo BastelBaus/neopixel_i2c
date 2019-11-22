@@ -4,33 +4,7 @@
 /*****************************************************************/
 /* Global register addresses                                     */
 /*****************************************************************/
-#define REG_CTRL    0
-  #define CTRL_RST    (1 << 0) // 
-  #define CTRL_GLB    (1 << 1)
-  #define CTRL_WAIT   (1 << 2) // 0: update each pixel after each command. 1: only updates pixels if CTRL_SHOW set is set
-  #define CTRL_SHOW   (1 << 3) // 1: all LEDs are set, after finish, value is reset to 0
-  #define CTRL_M0     (1 << 6) // M1:M0 = B00 ==> k=1   // M1:M0 = B01 ==> k=2
-  #define CTRL_M1     (1 << 7) // M1:M0 = B10 ==> k=3   // M1:M0 = B00 ==> k=4
-  #define GET_CTRL_k  ( ( (REG_CTRL &  (CTRL_M1|CTRL_M0)) >>6 )  + 1 )
-
-#define REG_LED_CNT    1
-#define REG_MAX_LED    2
-#define REG_GLB_G      3
-#define REG_GLB_R      4
-#define REG_GLB_B      5
-#ifdef NEOPIXEL_USE_GPIO
-#define REG_GPIO_CTRL  6
-   // Configure, set and get GPIOs
-  #define REG_GPIO0_CTRL    0
-  #define REG_GPIO0_IO      2
-  #define REG_GPIO1_CTRL    3
-  #define REG_GPIO1_IO      5 
-  #define GPIO_OUTPUT       0
-  #define GPIO_INPUT        1
-  #define GPIO_INPUT_PULLUP 2
-#endif
-	
-#define REG_FIRSTLED    12
+#include "slave/i2c_slave_defs.h"
 
 /*****************************************************************/
 /* Construction and setup of the class                           */
@@ -54,7 +28,7 @@ bool neopixel_i2c::setup(uint8_t pixelCount, bool waitForShow) {
 #endif   
 
 void neopixel_i2c::reset(void) {
-  setRegister(REG_CTRL,CTRL_RST);
+  setRegister(REG_CTRL0,((1<<CTRL0_RST));
 }
 /*****************************************************************/
 /* Utility functionality                                         */
@@ -71,9 +45,7 @@ uint8_t  neopixel_i2c::getMaxPixelCount(bool RGBW = false) {
 
 bool neopixel_i2c::setPixelCount(uint8_t pixelCount) {
   if ( pixelCount <=  getMaxPixelCount() ) {
-    delay(1);
 	setRegister(REG_LED_CNT,pixelCount);
-    delay(1);
 	this->pixelCount = pixelCount;
 	return true;
   }
@@ -85,17 +57,29 @@ uint8_t  neopixel_i2c::getPixelCount(void) {
 }
 
 void neopixel_i2c::setWaitMode(bool waitForShow) {
-  if (waitForShow)  setRegister(REG_CTRL, getRegister(REG_CTRL) | CTRL_WAIT );
-  else				setRegister(REG_CTRL, getRegister(REG_CTRL) & (~CTRL_WAIT) );
+  if (waitForShow)  setRegister(REG_CTRL0, getRegister(REG_CTRL0) | (CTRL0_WAIT) );
+  else				setRegister(REG_CTRL0, getRegister(REG_CTRL0) & (~(1<<CTRL0_WAIT)) );
 }
 void neopixel_i2c::show(void) {
-  setRegister(REG_CTRL, getRegister(REG_CTRL) | CTRL_SHOW );
+  setRegister(REG_CTRL0, getRegister(REG_CTRL0) | (1<<CTRL0_SHOW) );
+}
+
+uint8_t neopixel_i2c::getVersion(void) {
+  return getRegister(REG_VER);
 }
 
 /*****************************************************************/
 /* Generic reading and setting of registers                      */
 /*****************************************************************/
 
+void neopixel_i2c::setRegisters(uint8_t adr, uint8_t value0,uint8_t value1,uint8_t value2) {
+  Wire.beginTransmission(I2C_ADR);
+  Wire.write(adr);  
+  Wire.write(value0);  
+  Wire.write(value1);  
+  Wire.write(value2);  
+  Wire.endTransmission();
+}
 void neopixel_i2c::setRegister(uint8_t adr, uint8_t value) {
   Wire.beginTransmission(I2C_ADR);
   Wire.write(adr);  
@@ -141,12 +125,7 @@ void neopixel_i2c::setPixelColor(uint8_t ID, uint8_t r, uint8_t g, uint8_t b) {
 	//adr /= 3;
   }	
   
-  Wire.beginTransmission(I2C_ADR);
-  Wire.write(adr);  
-  Wire.write(b);  
-  Wire.write(g);  
-  Wire.write(r);  
-  Wire.endTransmission();
+  setRegisters(adr,b,g,r);
 	
   // clear scaling bits
   if( scaleAdr ) {
@@ -154,27 +133,68 @@ void neopixel_i2c::setPixelColor(uint8_t ID, uint8_t r, uint8_t g, uint8_t b) {
   }
 }
 
+void neopixel_i2c::setPixelColorGlobal(cRGB color, bool show) {
+  setPixelColorGlobal(color.r,color.g,color.b,show);
+}
+void neopixel_i2c::setPixelColorGlobal(uint8_t r, uint8_t g, uint8_t b, bool show){
+  setRegisters(REG_GLB_G,b,g,r);
+  setRegister(REG_CTRL0,getRegister(REG_CTRL0) | (1<<CTRL0_SETG));
+  if(show) this->show();  
+}
+	
 void neopixel_i2c::clear(bool show){
-  for ( uint8_t i=0; i<pixelCount; i++) {
-    setPixelColor(i, 0x00,0x00,0x00) ;
-  }
-  //if(show) this->show();    
+  //for ( uint8_t i=0; i<pixelCount; i++) setPixelColor(i, 0x00,0x00,0x00);
+  setPixelColorGlobal(0x00,0x00,0x00);
+  if(show) this->show();    
 }	
 
 /*****************************************************************/
 /* Configure, set and read GPIO                                  */
 /*****************************************************************/
 
-#ifdef NEOPIXEL_USE_GPIO
-void neopixel_i2c::configGPIO(uint8_t config) {
-}
-void neopixel_i2c::setGPIO0(uint8_t level) {
-}
-void neopixel_i2c::setGPIO1(uint8_t level) {
-}
-uint8_t neopixel_i2c::setGPIO0(void) {
-}
-uint8_t neopixel_i2c::setGPIO1(void){
+void    neopixel_i2c::configGPIO(uint8_t config) {
+	uint8_t reg = getRegister(REG_CTRL1);
+	
+	
+	// ToDo: change to registers in i2c_slave_defs defines
+	switch (config & 0x03) {
+		case GPIOa_OUTPUT:		 reg = (reg & ~B000011) | B10; break;
+		case GPIOa_INPUT:		 reg = (reg & ~B000011) | B00; break;
+		case GPIOa_INPUT_PULLUP: reg = (reg & ~B000011) | B01; break;
+	}
+
+	switch (config & 0x30) {
+		case GPIOb_OUTPUT:	 	 reg = (reg & ~B11000) | B10000; break;
+		case GPIOb_INPUT:		 reg = (reg & ~B11000) | B00000; break;
+		case GPIOb_INPUT_PULLUP: reg = (reg & ~B11000) | B01000; break;
+	}
+	
+	setRegister(REG_CTRL1,  reg);
 }
 
-#endif
+
+void neopixel_i2c::setGPIO(uint8_t level) {
+	uint8_t reg = getRegister(REG_CTRL1);
+	
+	if( (level & 0x03) == GPIOa_LOW)         reg = reg & ~B000100;
+	else if( (level & 0x03) == GPIOa_HIGH) 	 reg = reg |  B000100;
+
+	if( (level & 0x30) == GPIOb_LOW)         reg = reg & ~B100000;
+	else if( (level & 0x30) == GPIOb_HIGH) 	 reg = reg |  B100000;
+
+	setRegister(REG_CTRL1,  reg);
+}
+
+uint8_t neopixel_i2c::getGPIO(void) {
+	uint8_t ret = 0;
+	uint8_t reg = getRegister(REG_CTRL1);
+	
+	//if( (level & 0x03) == GPIOa_LOW)         reg = reg & ~B000100;
+	//else if( (level & 0x03) == GPIOa_HIGH) 	 reg = reg |  B000100;
+
+	//if( (level & 0x30) == GPIOb_LOW)         reg = reg & ~B100000;
+	//else if( (level & 0x30) == GPIOb_HIGH) 	 reg = reg |  B100
+	return  ret;
+}
+	
+
