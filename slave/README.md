@@ -43,11 +43,7 @@ PB0: I2C - SDA
 For more details and deviating configurations see slave code in subfolder [slave/](slave/).
 For product description, see [http://digistump.com/products/1](http://digistump.com/products/1).
 
-a
-
-![digisparc with ATTiny85 as example slave device](digispark_ATTiny85.png)
-
-b
+![digisparc with ATTiny85 as example slave device](https://github.com/BastelBaus/neopixel_i2c/digispark_ATTiny85.png)
 
 ### Suggested circuit for own implementation.
 
