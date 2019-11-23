@@ -25,9 +25,20 @@
 #define I2C_SCL 	2
 
 // I2C address and maximum number of LEDs
-#define I2C_SLAVE_ADDR 		0x40
-#define N_LEDS 				80 			// ((uint8_t)((2^8-4))/3))
-#define LED_COLS			3			// 3: for RGB 4: RGBW
+#define I2C_SLAVE_ADDR 	  0x40
+#define N_LEDS 			      140 			
+#define TOTAL_RAM         512
+#define LED_COLS			      3
+
+
+
+// check if sufficient free RAM is available
+#define FEE_STACK_NEED   80  // not calculated, just guessed
+#if (N_LEDS * LED_COLS + FEE_STACK_NEED)> TOTAL_RAM 
+  #error "LED count To high. It exceeds maximum RAM."
+#endif
+
+
 
 /*
  * The library supports a write mask for each individual register (bits set are

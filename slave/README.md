@@ -17,10 +17,10 @@ The maximum number depends on
 |--------------|--------|------------------------|
 | ATTiny45     | RGB    | ~82                    |
 | ATTiny45     | RGBW   |  ?                     |
-| ATTiny85     | RGB    | 167                    |
+| ATTiny85     | RGB    | ~140+                  |
 | ATTiny85     | RGBW   |  ?                     |
-| *1)          | RGB    |                        |
-| *1)          | RGBW   |                        |
+| *1)          | RGB    | 252                    |
+| *1)          | RGBW   | 253                    |
 
 *) Device with maximum RAM, only limited by address space.
 

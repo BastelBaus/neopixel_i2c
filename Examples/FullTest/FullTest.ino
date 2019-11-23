@@ -33,6 +33,8 @@ void setup() {
   } // if (!neoI2C.setup(LED_COUNT,true) ) {
   
   pixCount = neoI2C.getPixelCount();
+  neoI2C.configGPIO(GPIOa_OUTPUT|GPIOb_OUTPUT);        // TOGGLE IOs
+
 
   Serial.print  ( "neopixel v 0x");
   Serial.print  ( neoI2C.getVersion(),HEX); 
@@ -54,7 +56,7 @@ void loop() {
   neoI2C.clear(false);                           // clear RAM but do not update LEDs
   neoI2C.setPixelColor( offset, 0x00,0x00,0xFF); // set a pixel to a rainbow color
   neoI2C.show();                                 // update all pixels just now
-  neoI2C.setGPIO(GPIOa_LOW | GPIOb_HIGH);        // TOGGLE IOs
+//  neoI2C.setGPIO(GPIOa_LOW | GPIOb_HIGH);        // TOGGLE IOs
   delay(400);
     
   uint16_t HUE = (uint16_t) offset * (MAX_HUE / pixCount); 
@@ -62,7 +64,7 @@ void loop() {
   neoI2C.setPixelColorGlobal(col,false);          // set all pixels in RAM to blue
   neoI2C.setPixelColor( offset, 0xFF,0x00,0x00 ); // set a pixel to white
   neoI2C.show();                                  // update all pixels just now
-  neoI2C.setGPIO(GPIOb_LOW | GPIOa_HIGH);         // TOGGLE IOs
+  //neoI2C.setGPIO(GPIOb_LOW | GPIOa_HIGH);         // TOGGLE IOs
   delay(400);
   
   offset++;

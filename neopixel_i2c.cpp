@@ -14,18 +14,16 @@ neopixel_i2c::neopixel_i2c(uint8_t I2C_ADR)
   : I2C_ADR(I2C_ADR) {};
 
 #ifdef NEOPIXEL_RGBW_SUPPORT
-bool neopixel_i2c::setup(uint8_t pixelCount, bool waitForShow, bool RBGWMode) {	
-}
 void neopixel_i2c::setRGBWMode(bool RGBW=true) {
 }
-#else
+#endif   
+
 bool neopixel_i2c::setup(uint8_t pixelCount, bool waitForShow) {	
 	Wire.begin();
 	reset();
     if(waitForShow) this->setWaitMode();
 	return setPixelCount(pixelCount);
 }
-#endif   
 
 void neopixel_i2c::reset(void) {
   uint8_t reg = 0;
