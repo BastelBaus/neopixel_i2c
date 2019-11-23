@@ -75,7 +75,7 @@ const uint8_t dim_curve[] = {
 #define DIV_HUE (MAX_HUE / 6) 
 
 // HUE: [0..MAX_HUE)
-static cRGB getRGBfromHSV(uint16_t hue, uint8_t sat, uint8_t val) {
+static cRGB getRGBfromHSV(uint16_t hue, uint8_t sat=0xff, uint8_t val=0xff) {
   cRGB  col;
 
   /* convert hue, saturation and brightness ( HSB/HSV ) to RGB

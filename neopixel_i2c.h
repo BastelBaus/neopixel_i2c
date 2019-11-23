@@ -26,6 +26,7 @@ class neopixel_i2c {
 	// - In default mode, a pixel is direly updated if the color changes.
 	// - can be called again and can also be used to change the pixel count dynamically
 //#ifndef NEOPIXEL_RGBW_SUPPORT
+    #define WAIT_TO_SHOW true
 	bool setup(uint8_t pixelCount=1, bool waitForShow=false);
 //#else
 //	bool setup(uint8_t pixelCount=1, bool waitForShow=false, bool RBGWMode = false);

@@ -43,6 +43,7 @@ PB0: I2C - SDA
 For more details and deviating configurations see slave code in subfolder [slave/](slave/).
 For product description, see [http://digistump.com/products/1](http://digistump.com/products/1).
 
+![digispark_ATTiny85.png]
 
 ### Suggested circuit for own implementation.
 
@@ -277,4 +278,12 @@ Version is set to 0x01 in the current stream. Will be counted up for future majo
 Everything after the global registers is an array of data for each LED.
 When the *GLB* bit is not set, each LED will display whatever value is
 programmed in its corresponding register set.
+
+
+// todo:
+//   NEO_KHZ800  800 KHz bitstream (most NeoPixel products w/WS2812 LEDs)
+//   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
+//   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
+//   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
+//   NEO_RGBW    Pixels are wired for RGBW bitstream (NeoPixel RGBW products)
 
