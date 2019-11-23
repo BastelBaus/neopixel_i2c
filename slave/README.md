@@ -45,6 +45,9 @@ For product description, see [http://digistump.com/products/1](http://digistump.
 
 ![digispark_ATTiny85.png](digispark_ATTiny85.png example picture)
 
+[[https://github.com/username/repository/blob/master/img/octocat.png|alt=octocat]]
+[[https://github.com/BastelBaus/neopixel_i2c/digispark_ATTiny85.png|alt=example]]
+
 ### Suggested circuit for own implementation.
 
 ```
