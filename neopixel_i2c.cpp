@@ -133,7 +133,7 @@ void neopixel_i2c::setPixelColor(uint8_t ID, uint8_t r, uint8_t g, uint8_t b) {
 	adr = adr/3;
   }	
   
-  setRegisters(adr,b,r,g);
+  setRegisters(adr,b,g,r);
 	
   // clear scaling bits
   if( scaleAdr ) { 
@@ -155,9 +155,7 @@ void neopixel_i2c::setPixelColorGlobal(uint8_t r, uint8_t g, uint8_t b, bool sho
 }
 	
 void neopixel_i2c::clear(bool show){
-  //for ( uint8_t i=0; i<pixelCount; i++) setPixelColor(i, 0x00,0x00,0x00);
-  setPixelColorGlobal(0x00,0x00,0x00);
-  if(show) this->show();    
+  setPixelColorGlobal(0x00,0x00,0x00,show);
 }	
 
 /*****************************************************************/
