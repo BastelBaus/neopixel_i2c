@@ -7,7 +7,7 @@
 
 // defined to add RGBW support (currently not implemented)
 //#define NEOPIXEL_RGBW_SUPPORT   1
-//#undef NEOPIXEL_RGBW_SUPPORT
+#undef NEOPIXEL_RGBW_SUPPORT
 
 #include <Wire.h>
 #include "neopixel_i2c.h"
@@ -20,7 +20,7 @@ class neopixel_i2c {
   public:
 
     // constructor
-    neopixel_i2c(uint8_t I2C_ADR);
+    neopixel_i2c(uint8_t I2C_ADR = 0x40);
 	
 	// Initializes and setups the library. Returns true if setup was sucessfully, else false (i.e. pixel count above possible pixel count).
 	// - In default mode, a pixel is direly updated if the color changes.
@@ -79,14 +79,13 @@ class neopixel_i2c {
 	uint8_t getGPIO(void);
 #endif
 
-  protected:;
-  public:;
-	// sets teh hiogh bit off the address (A9 & A8) and returns the remaining 8bit address
+  protected:
+	
 	uint8_t setAddress(uint16_t adr16);
 	void 	setRegister(uint8_t adr, uint8_t value);
 	void 	setRegisters(uint8_t adr, uint8_t value0,uint8_t value1,uint8_t value2);
 	uint8_t getRegister(uint8_t adr);
-	void reset(void);      // turn all lights off and reset registers. "All means MAX lights fingfigued in slave. ALso cleas the register counts
+	void reset(void);      // turn all lights off and reset registers. "All means MAX lights configued in slave. Also clean the register counts
     
   private:
     uint8_t I2C_ADR;

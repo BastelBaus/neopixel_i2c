@@ -26,9 +26,9 @@
 
 // I2C address and maximum number of LEDs
 #define I2C_SLAVE_ADDR 	  0x40
-#define N_LEDS 			      140 			
+#define N_LEDS 			  140 			
 #define TOTAL_RAM         512
-#define LED_COLS			      3
+#define LED_COLS		  3
 
 
 
