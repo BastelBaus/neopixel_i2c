@@ -18,7 +18,7 @@ The maximum number depends on
 
 | slave device | colors | max. controlable LEDs  |
 |--------------|--------|------------------------|
-| ATTiny45     | RGB    | ~82                    |
+| ATTiny45     | RGB    | ~80                    |
 | ATTiny45     | RGBW   |  ?                     |
 | ATTiny85     | RGB    | ~140                   |
 | ATTiny85     | RGBW   |  ?                     |
@@ -84,6 +84,9 @@ By default it is configured to work with the default configuration of the master
 
 # The control class for the master.
 
+The following sections give a brief overview of teh functionality. You can check 
+[Examples\FullTest\FullTest.ino](Examples\FullTest\FullTest.ino) to see a simple demo 
+using all functionality for demonstration purpose.
 
 ## Blink example
 
@@ -109,13 +112,8 @@ void loop() {
 }
 ```
 
-## Functional description
 
-The following sections give a brief overview of teh functionality. You can check 
-[Examples\FullTest\FullTest.ino](Examples\FullTest\FullTest.ino) to see a simple demo 
-using all functionality for demonstration purpose.
-
-### Initialization
+## Initialization
 
 The libraray must be configured with the I2C address of the slave device. Note the 
 default I2C address is 0x40.
@@ -145,7 +143,7 @@ will not change anything.
     uint8_t  getMaxPixelCount();
 ```
 
-### Setting LEDs
+## Setting LEDs
 
 Pixels can be set individually or globally by either passing three bytes for red, 
 green and blue or alternatively passing a cRGB structure including these colors. The 
@@ -168,7 +166,7 @@ the wait mode can significantly speed up your code if you update several LEDs at
     void show(void);
 ```
 	
-### GPIO control
+## GPIO control
 
 The GPIOs can be configured indicvidually using the configGPIO function (```neoI2C.configGPIO(GPIOa_OUTPUT | GPIOb_INPUT); ```).
 
@@ -194,7 +192,7 @@ The GPIOs set or read by teh get and set function as follows (```neoI2C.setGPIO(
 	uint8_t getGPIO(void);
 ```
 
-## **Timing**
+# **Timing**
 
 * Changing a pixel over I2C with the default speed of 100kHz takes about 
 500us (I2C address + Reg Address + 3 bytes) for the I2C transfer.
